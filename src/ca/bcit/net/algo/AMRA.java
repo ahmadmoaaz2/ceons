@@ -26,6 +26,7 @@ public class AMRA implements IRMSAAlgorithm{
 
 		List<PartedPath> candidatePaths = demand.getCandidatePaths(false, network);
 		if (candidatePaths.isEmpty())
+
 			return DemandAllocationResult.NO_SPECTRUM;
 
 		candidatePaths = applyMetrics(network, volume, candidatePaths);

@@ -9,9 +9,9 @@ import java.util.*;
 
 public class SavedNodeDetails implements YamlSerializable {
 
+    private static String connectedNodeNum;
     private HashMap<ArrayList<String>, HashMap<String, Object>> connectedNodeLinkMap = new HashMap<ArrayList<String>, HashMap<String, Object>>();
     private String location;
-    private String connectedNodeNum;
     private int nodeNum;
     private int numRegenerators;
     private String nodeType;
@@ -77,7 +77,7 @@ public class SavedNodeDetails implements YamlSerializable {
      * Getter for connectedNodeNum
      * @return String node numbers of the connected node, ex: "1,2,3"
      */
-    public String getConnectedNodeNum() {
+    public static String getConnectedNodeNum() {
         return connectedNodeNum;
     }
 

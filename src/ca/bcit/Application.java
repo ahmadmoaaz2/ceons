@@ -6,6 +6,7 @@ import ca.bcit.io.project.ProjectFileFormat;
 import ca.bcit.net.Network;
 import ca.bcit.net.NetworkLink;
 import ca.bcit.net.NetworkNode;
+import ca.bcit.net.algo.FFNN;
 import ca.bcit.net.demand.generator.AnycastDemandGenerator;
 import ca.bcit.net.demand.generator.TrafficGenerator;
 import ca.bcit.net.demand.generator.UnicastDemandGenerator;
@@ -79,6 +80,7 @@ public class Application extends javafx.application.Application {
     private static void registerAlgorithms() throws Exception {
         Settings.registerAlgorithm("ca.bcit.net.algo.SPF");
         Settings.registerAlgorithm("ca.bcit.net.algo.AMRA");
+        Settings.registeredAlgorithms.put("FFNN", new FFNN());
     }
 
     private static void registerYamlSerializableClasses() throws NoSuchMethodException {
