@@ -33,27 +33,27 @@ public class SPF implements IRMSAAlgorithm {
         int volume = (int) Math.ceil(demand.getVolume() / 10) - 1;
         List<PartedPath> candidatePaths = demand.getCandidatePaths(false, network);
         sortByLength(network, volume, candidatePaths);
-        try {
-            double the_demand_x = candidatePaths.get(0).getParts().get(0).getSource().getPosition().getX();
-            double the_demand_y = candidatePaths.get(0).getParts().get(0).getSource().getPosition().getY();
-            double node_two_x = candidatePaths.get(1).getParts().get(1).getSource().getPosition().getX();
-            double node_two_y = candidatePaths.get(1).getParts().get(1).getSource().getPosition().getY();
-            int node_two_regen = candidatePaths.get(1).getParts().get(1).getSource().getFreeRegenerators();
-            double node_two_occupied_slices = candidatePaths.get(1).getParts().get(1).getOccupiedSlicesPercentage();
-            double node_one_x = candidatePaths.get(0).getParts().get(1).getSource().getPosition().getX();
-            double node_one_y = candidatePaths.get(0).getParts().get(1).getSource().getPosition().getY();
-            int node_one_regen = candidatePaths.get(0).getParts().get(1).getSource().getFreeRegenerators();
-            double node_one_occupied_slices = candidatePaths.get(0).getParts().get(1).getOccupiedSlicesPercentage();
-            double choice1 = (node_one_regen*.4) + (node_one_occupied_slices*.4) + (((the_demand_x - node_one_x) + (the_demand_y - node_one_y))*.2);
-            double choice2 = (node_two_regen*.4) + (node_two_occupied_slices*.4) + (((the_demand_x - node_two_x) + (the_demand_y - node_two_y))*.2);
-            int correctPath = choice1 > choice2 ? 0 : 1;
-            if (node_one_x != node_two_x)
-                FFNN.writeTrainingData(new TrainingData(the_demand_x, node_one_x, node_two_x, the_demand_y, node_one_y, node_two_y, node_one_regen, node_two_regen, node_one_occupied_slices, node_two_occupied_slices, volume, correctPath));
-            else
-                System.out.println("Paths are the same");
-        } catch (IndexOutOfBoundsException ignored){
-            System.out.println("Paths are the same");
-        }
+//        try {
+//            double the_demand_x = candidatePaths.get(0).getParts().get(0).getSource().getPosition().getX();
+//            double the_demand_y = candidatePaths.get(0).getParts().get(0).getSource().getPosition().getY();
+//            double node_two_x = candidatePaths.get(1).getParts().get(1).getSource().getPosition().getX();
+//            double node_two_y = candidatePaths.get(1).getParts().get(1).getSource().getPosition().getY();
+//            int node_two_regen = candidatePaths.get(1).getParts().get(1).getSource().getFreeRegenerators();
+//            double node_two_occupied_slices = candidatePaths.get(1).getParts().get(1).getOccupiedSlicesPercentage();
+//            double node_one_x = candidatePaths.get(0).getParts().get(1).getSource().getPosition().getX();
+//            double node_one_y = candidatePaths.get(0).getParts().get(1).getSource().getPosition().getY();
+//            int node_one_regen = candidatePaths.get(0).getParts().get(1).getSource().getFreeRegenerators();
+//            double node_one_occupied_slices = candidatePaths.get(0).getParts().get(1).getOccupiedSlicesPercentage();
+//            double choice1 = (node_one_regen*.7) + (node_one_occupied_slices*.2) + (((the_demand_x - node_one_x) + (the_demand_y - node_one_y))*.1);
+//            double choice2 = (node_two_regen*.7) + (node_two_occupied_slices*.2) + (((the_demand_x - node_two_x) + (the_demand_y - node_two_y))*.1);
+//            int correctPath = choice1 > choice2 ? 0 : 1;
+//            if (node_one_x != node_two_x)
+//                FFNN.writeTrainingData(new TrainingData(the_demand_x, node_one_x, node_two_x, the_demand_y, node_one_y, node_two_y, node_one_regen, node_two_regen, node_one_occupied_slices, node_two_occupied_slices, volume, correctPath));
+//            else
+//                System.out.println("Paths are the same");
+//        } catch (IndexOutOfBoundsException ignored){
+//            System.out.println("Paths are the same");
+//        }
 
         if (candidatePaths.isEmpty())
             return DemandAllocationResult.NO_SPECTRUM;

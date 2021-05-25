@@ -3,8 +3,7 @@ package ca.bcit.net.algo;
 import ca.bcit.net.*;
 import ca.bcit.net.demand.Demand;
 import ca.bcit.net.demand.DemandAllocationResult;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
@@ -12,32 +11,65 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
+import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileReader;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
 public class FFNN implements IRMSAAlgorithm {
     MultiLayerNetwork multiLayerNetwork;
-    public FFNN(){
+
+    public FFNN() {
         NN nn = new NN();
         multiLayerNetwork = nn.getNeuralNetwork();
+        try {
+            File file = new File("trainingData.json");
+            FileReader fileReader = new FileReader(file);
+            JSONParser jsonParser = new JSONParser();
+            JSONArray oldArray = (JSONArray) jsonParser.parse(fileReader);
+            for (Object object : oldArray) {
+                JSONObject jsonObject = (JSONObject) object;
+                INDArray inputs = Nd4j.create(new double[]{
+                        (double) jsonObject.get("currXCord"),
+                        (double) jsonObject.get("xCord1"),
+                        (double) jsonObject.get("xCord2"),
+                        (double) jsonObject.get("currYCord"),
+                        (double) jsonObject.get("yCord1"),
+                        (double) jsonObject.get("yCord2"),
+                        (long) jsonObject.get("regenerators1"),
+                        (long) jsonObject.get("regenerators2"),
+                        (double) jsonObject.get("occupiedSpectrum1"),
+                        (double) jsonObject.get("occupiedSpectrum2"),
+                        (long) jsonObject.get("volume"),
+                });
+                INDArray output = ((long) jsonObject.get("correctPath") == 0) ? Nd4j.create(new double[]{1,0}):Nd4j.create(new double[]{0,1});
+                multiLayerNetwork.fit(inputs, output);
+            }
+            System.out.println("Training Finished");
+        } catch (Exception e) {
+            System.out.println("File cannot be read or doesnt exist");
+            e.printStackTrace();
+        }
     }
+
     @Override
     public String getKey() {
-        return "Feed Forward Neural Network";
+        return "FFNN";
     }
 
     @Override
     public String getName() {
-        return "Feed Forward Neural Network";
+        return "FFNN";
     }
 
     @Override
@@ -50,6 +82,13 @@ public class FFNN implements IRMSAAlgorithm {
         int volume = (int) Math.ceil(demand.getVolume() / 10.0) - 1;
         List<PartedPath> candidatePaths = demand.getCandidatePaths(false, network);
         sortByLength(network, volume, candidatePaths);
+        for (PartedPath path : candidatePaths)
+            path.setMetric(network.getRegeneratorMetricValue() * (path.getNeededRegeneratorsCount()) + path.getMetric());
+        for (int i = 0; i < candidatePaths.size(); i++)
+            if (candidatePaths.get(i).getMetric() < 0) {
+                candidatePaths.remove(i);
+                i--;
+            }
         if (candidatePaths.isEmpty())
             return DemandAllocationResult.NO_SPECTRUM;
         boolean workingPathSuccess = false;
@@ -107,7 +146,7 @@ public class FFNN implements IRMSAAlgorithm {
             }));
             return (output.getDouble(0) > output.getDouble(1)) ?
                     findBestPath(volume, pathList1, start + 1) : findBestPath(volume, pathList2, start + 1);
-        } catch (Exception ignored) {
+        } catch (Exception e) {
             ArrayList<PartedPath> list = new ArrayList<>();
             list.add(path1);
             return list;
@@ -142,46 +181,35 @@ public class FFNN implements IRMSAAlgorithm {
     }
 
     public static void writeTrainingData(TrainingData data) {
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
-        String json = gson.toJson(data);
-        System.out.println(json);
-
-        BufferedWriter bw = null;
-        FileWriter fw = null;
         try {
-            String filename = "trainingData.json";
-            String workingDirectory = System.getProperty("user.dir");
-            String absoluteFilePath = "";
-
-            absoluteFilePath = workingDirectory + File.separator + filename;
-
-            System.out.println("Final filepath : " + absoluteFilePath);
-
-            File file = new File(absoluteFilePath);
-            if (!file.exists()) {
-                file.createNewFile();
-                FileWriter fileWriter = new FileWriter(absoluteFilePath);
-                fileWriter.write(json);
-                fileWriter.close();
-                System.out.println("File is created");
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("currXCord", data.currXCord);
+            jsonObject.put("xCord1", data.xCord1);
+            jsonObject.put("xCord2", data.xCord2);
+            jsonObject.put("currYCord", data.currYCord);
+            jsonObject.put("yCord1", data.yCord1);
+            jsonObject.put("yCord2", data.yCord2);
+            jsonObject.put("regenerators1", data.regenerators1);
+            jsonObject.put("regenerators2", data.regenerators2);
+            jsonObject.put("occupiedSpectrum1", data.occupiedSpectrum1);
+            jsonObject.put("occupiedSpectrum2", data.occupiedSpectrum2);
+            jsonObject.put("volume", data.volume);
+            jsonObject.put("correctPath", data.correctPath);
+            File file = new File("trainingData.json");
+            if (file.exists()) {
+                FileReader fileReader = new FileReader(file);
+                JSONParser jsonParser = new JSONParser();
+                JSONArray oldArray = (JSONArray) jsonParser.parse(fileReader);
+                if (!oldArray.contains(jsonObject)) oldArray.add(jsonObject);
+                Files.write(Paths.get(file.getAbsolutePath()), oldArray.toJSONString().getBytes());
             } else {
-                System.out.println("File already exists");
-                fw = new FileWriter(file.getAbsoluteFile(), true);
-                bw = new BufferedWriter(fw);
-
-                bw.write(json);
+                JSONArray array = new JSONArray();
+                file.createNewFile();
+                array.add(jsonObject);
+                Files.write(Paths.get(file.getAbsolutePath()), array.toJSONString().getBytes());
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (bw != null)
-                    bw.close();
-                if (fw != null)
-                    fw.close();
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
+        } catch (Exception ignored) {
+            System.out.println("Failed to write the training data");
         }
     }
 
@@ -232,12 +260,12 @@ class NN {
                 .weightInit(WeightInit.XAVIER)
                 .updater(Updater.ADAGRAD)
                 .activation(Activation.RELU)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                 .learningRate(0.05)
                 .regularization(true).l2(0.0001)
                 .list()
                 .layer(0, new DenseLayer.Builder()
-                        .nIn(12)
+                        .nIn(11)
                         .nOut(10)
                         .weightInit(WeightInit.XAVIER)
                         .activation(Activation.RELU) //First hidden layer
@@ -247,7 +275,7 @@ class NN {
                         .nOut(2)
                         .weightInit(WeightInit.XAVIER)
                         .activation(Activation.SOFTMAX) //Output layer
-                        .lossFunction(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+                        .lossFunction(LossFunctions.LossFunction.SQUARED_HINGE)
                         .build())
                 .pretrain(false)
                 .backprop(true)
@@ -261,18 +289,18 @@ class NN {
 }
 
 class TrainingData {
-    private double currXCord;
-    private double xCord1;
-    private double xCord2;
-    private double currYCord;
-    private double yCord1;
-    private double yCord2;
-    private int regenerators1;
-    private int regenerators2;
-    private double occupiedSpectrum1;
-    private double occupiedSpectrum2;
-    private int volume;
-    private int correctPath;
+    public double currXCord;
+    public double xCord1;
+    public double xCord2;
+    public double currYCord;
+    public double yCord1;
+    public double yCord2;
+    public int regenerators1;
+    public int regenerators2;
+    public double occupiedSpectrum1;
+    public double occupiedSpectrum2;
+    public int volume;
+    public int correctPath;
 
     public TrainingData(double currXCord, double xCord1, double xCord2, double currYCord, double yCord1, double yCord2, int regenerators1, int regenerators2, double occupiedSpectrum1, double occupiedSpectrum2, int volume, int correctPath) {
         this.currXCord = currXCord;

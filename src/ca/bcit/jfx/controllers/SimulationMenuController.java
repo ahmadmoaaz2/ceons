@@ -2,7 +2,6 @@ package ca.bcit.jfx.controllers;
 
 import ca.bcit.ApplicationResources;
 import ca.bcit.Settings;
-import ca.bcit.graph.Path;
 import ca.bcit.io.MapLoadingException;
 import ca.bcit.jfx.DrawingState;
 import ca.bcit.jfx.components.*;
